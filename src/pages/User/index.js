@@ -31,18 +31,35 @@ export default class User extends Component {
 
   state = {
     stars: [],
-    loading: false,
+    loading: true,
+    page: 1,
   };
 
   async componentDidMount() {
-    this.setState({ loading: true });
+    await this.loadStars();
+  }
+
+  loadStars = async (page = 1) => {
     const { navigation } = this.props;
+    const { stars } = this.state;
     const user = navigation.getParam('user');
 
-    const response = await api.get(`/users/${user.login}/starred`);
+    const response = await api.get(`/users/${user.login}/starred`, {
+      params: { page },
+    });
 
-    this.setState({ stars: response.data, loading: false });
-  }
+    await this.setState({
+      stars: page >= 2 ? [...stars, ...response.data] : response.data,
+      loading: false,
+      page,
+    });
+  };
+
+  loadMore = async () => {
+    const { page } = this.state;
+    const nextPage = page + 1;
+    await this.loadStars(nextPage);
+  };
 
   render() {
     const { navigation } = this.props;
@@ -53,24 +70,33 @@ export default class User extends Component {
     return (
       <Container>
         <Header>
-          <Avatar source={{ uri: user.avatar }} />
+          <Avatar source={{ uri: user && user.avatar }} />
           <Name>{user.name}</Name>
           <Bio>{user.bio}</Bio>
         </Header>
-        {loading && <ActivityIndicator color="#7159c1" />}
-        <Stars
-          data={stars}
-          keyExtractor={star => String(star.id)}
-          renderItem={({ item }) => (
-            <Starred>
-              <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
-              <Info>
-                <Title>{item.name}</Title>
-                <Author>{item.owner.login}</Author>
-              </Info>
-            </Starred>
-          )}
-        />
+        {loading ? (
+          <ActivityIndicator color="#7159c1" />
+        ) : (
+          <Stars
+            data={stars}
+            keyExtractor={star => String(star.id)}
+            renderItem={({ item, index }) => (
+              <Starred>
+                <OwnerAvatar
+                  source={{ uri: item.owner && item.owner.avatar_url }}
+                />
+                <Info>
+                  <Title>
+                    {index + 1} - {item.name}
+                  </Title>
+                  <Author>{item.owner && item.owner.login}</Author>
+                </Info>
+              </Starred>
+            )}
+            onEndReachedThreshold={0.01}
+            onEndReached={this.loadMore}
+          />
+        )}
       </Container>
     );
   }
