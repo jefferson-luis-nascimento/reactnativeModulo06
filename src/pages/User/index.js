@@ -33,6 +33,7 @@ export default class User extends Component {
     stars: [],
     loading: true,
     page: 1,
+    refreshing: false,
   };
 
   async componentDidMount() {
@@ -52,6 +53,7 @@ export default class User extends Component {
       stars: page >= 2 ? [...stars, ...response.data] : response.data,
       loading: false,
       page,
+      refreshing: false,
     });
   };
 
@@ -61,9 +63,16 @@ export default class User extends Component {
     await this.loadStars(nextPage);
   };
 
+  refreshList = async () => {
+    this.setState({ page: 1, refreshing: true });
+    const nextPage = 1;
+
+    await this.loadStars(nextPage);
+  };
+
   render() {
     const { navigation } = this.props;
-    const { stars, loading } = this.state;
+    const { stars, loading, refreshing } = this.state;
 
     const user = navigation.getParam('user');
 
@@ -74,29 +83,28 @@ export default class User extends Component {
           <Name>{user.name}</Name>
           <Bio>{user.bio}</Bio>
         </Header>
-        {loading ? (
-          <ActivityIndicator color="#7159c1" />
-        ) : (
-          <Stars
-            data={stars}
-            keyExtractor={star => String(star.id)}
-            renderItem={({ item, index }) => (
-              <Starred>
-                <OwnerAvatar
-                  source={{ uri: item.owner && item.owner.avatar_url }}
-                />
-                <Info>
-                  <Title>
-                    {index + 1} - {item.name}
-                  </Title>
-                  <Author>{item.owner && item.owner.login}</Author>
-                </Info>
-              </Starred>
-            )}
-            onEndReachedThreshold={0.01}
-            onEndReached={this.loadMore}
-          />
-        )}
+        {loading && <ActivityIndicator color="#7159c1" />}
+        <Stars
+          data={stars}
+          keyExtractor={star => String(star.id)}
+          renderItem={({ item, index }) => (
+            <Starred>
+              <OwnerAvatar
+                source={{ uri: item.owner && item.owner.avatar_url }}
+              />
+              <Info>
+                <Title>
+                  {index + 1} - {item.name}
+                </Title>
+                <Author>{item.owner && item.owner.login}</Author>
+              </Info>
+            </Starred>
+          )}
+          onRefresh={this.refreshList}
+          refreshing={refreshing}
+          onEndReachedThreshold={0.01}
+          onEndReached={this.loadMore}
+        />
       </Container>
     );
   }
