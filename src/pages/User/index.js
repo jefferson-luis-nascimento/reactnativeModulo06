@@ -26,6 +26,7 @@ export default class User extends Component {
   static propTypes = {
     navigation: PropTypes.shape({
       getParam: PropTypes.func,
+      navigate: PropTypes.func,
     }).isRequired,
   };
 
@@ -70,6 +71,12 @@ export default class User extends Component {
     await this.loadStars(nextPage);
   };
 
+  handleNavigation = repository => {
+    const { navigation } = this.props;
+
+    navigation.navigate('Repository', { repository });
+  };
+
   render() {
     const { navigation } = this.props;
     const { stars, loading, refreshing } = this.state;
@@ -79,7 +86,7 @@ export default class User extends Component {
     return (
       <Container>
         <Header>
-          <Avatar source={{ uri: user && user.avatar }} />
+          <Avatar source={{ uri: user.avatar }} />
           <Name>{user.name}</Name>
           <Bio>{user.bio}</Bio>
         </Header>
@@ -87,16 +94,12 @@ export default class User extends Component {
         <Stars
           data={stars}
           keyExtractor={star => String(star.id)}
-          renderItem={({ item, index }) => (
-            <Starred>
-              <OwnerAvatar
-                source={{ uri: item.owner && item.owner.avatar_url }}
-              />
+          renderItem={({ item }) => (
+            <Starred onPress={() => this.handleNavigation(item)}>
+              <OwnerAvatar source={{ uri: item.owner.avatar_url }} />
               <Info>
-                <Title>
-                  {index + 1} - {item.name}
-                </Title>
-                <Author>{item.owner && item.owner.login}</Author>
+                <Title>{item.name}</Title>
+                <Author>{item.owner.login}</Author>
               </Info>
             </Starred>
           )}
